@@ -11,11 +11,13 @@ export LIBDECOR_PLUGIN=none
 export LIBDECOR_DISABLE=1
 export GLFW_WAYLAND_NO_LIBDECOR=1
 
+.PHONY: shaders
 shaders:
 	glslc shaders/simple_shader.frag -o shaders/simple_shader.frag.spv
 	glslc shaders/simple_shader.vert -o shaders/simple_shader.vert.spv
 
 all: 
 	$(CC) $(CFLAGS) src/*.cpp -o main $(LDFLAGS)
-run: all shaders
-	./main
+run: shaders all
+	echo iran
+#	./main

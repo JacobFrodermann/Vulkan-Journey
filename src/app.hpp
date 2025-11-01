@@ -35,6 +35,6 @@ namespace firstGame {
 
             std::unique_ptr<appPipeline> pipeline;
             VkPipelineLayout layout;
-            std::vector<VkCommandBuffer> commandBuffer;
+            std::vector<VkCommandBuffer> commandBuffers;
     };
 };
