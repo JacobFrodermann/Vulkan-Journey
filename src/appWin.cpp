@@ -1,11 +1,13 @@
 #include "appWin.hpp"
 #include <GLFW/glfw3.h>
+#include <cstdint>
 #include <iostream>
 #include <stdexcept>
 #include <string>
+#include <vulkan/vulkan_core.h>
 
 namespace firstGame {
-    appWin::appWin(int w, int h, std::string name) : width{w}, height{h}, name{name} {
+    appWin::appWin(uint32_t w, uint32_t h, std::string name) : width{w}, height{h}, name{name} {
         init();
     }
 
@@ -40,5 +42,9 @@ namespace firstGame {
         if (glfwCreateWindowSurface(instance, window, nullptr, surface)) {
             throw std::runtime_error("failed to create Windows surface");
         }
+    }
+
+    VkExtent2D appWin::getExtend() {
+        return {width, height};
     }
 }
