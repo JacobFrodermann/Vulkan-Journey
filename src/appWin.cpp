@@ -47,4 +47,8 @@ namespace firstGame {
     VkExtent2D appWin::getExtend() {
         return {width, height};
     }
+
+    GLFWwindow* appWin::getWindow() {
+        return window;
+    }
 }

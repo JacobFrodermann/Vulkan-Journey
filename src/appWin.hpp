@@ -29,5 +29,6 @@ namespace firstGame {
             void createWindowSurface(VkInstance instance, VkSurfaceKHR *surface);
 
             VkExtent2D getExtend();
+            GLFWwindow* getWindow();
         };
 }

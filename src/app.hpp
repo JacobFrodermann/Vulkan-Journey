@@ -2,6 +2,7 @@
 
 #include "appWin.hpp"
 #include "appPipeline.hpp"
+#include "app_model.hpp"
 #include "my_engine_device.hpp"
 #include "my_engine_swap_chain.hpp"
 #include <memory>
@@ -21,8 +22,11 @@ namespace firstGame {
 
             app(const app &) = delete;
             app &operator=(const app &) = delete;
+    
+            void handleKeyPress(int key, int scancode, int action, int mods);
 
         private:
+            void loadModels();
             void createPipelineLayout();
             void createPipeline();
             void createCommandBuffer();
@@ -30,11 +34,14 @@ namespace firstGame {
 
 
             appWin win{WIDTH, HEIGHT,  "Hello vk"};
-            MyEngineDevice device{win};
-            MyEngineSwapChain swapChain{device, win.getExtend()};
+            MyEngineDevice gameDevice{win};
+            MyEngineSwapChain swapChain{gameDevice, win.getExtend()};
 
             std::unique_ptr<appPipeline> pipeline;
             VkPipelineLayout layout;
             std::vector<VkCommandBuffer> commandBuffers;
+            std::unique_ptr<appModel> gameModel;    
+        
+            std::vector<appModel::Vertex> vertices;
     };
 };

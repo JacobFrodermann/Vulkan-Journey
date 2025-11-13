@@ -18,6 +18,6 @@ shaders:
 
 all: 
 	$(CC) $(CFLAGS) src/*.cpp -o main $(LDFLAGS)
+
 run: shaders all
-	echo iran
-#	./main
+	./main

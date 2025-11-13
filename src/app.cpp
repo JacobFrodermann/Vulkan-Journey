@@ -1,5 +1,6 @@
 #include "app.hpp"
 #include "appPipeline.hpp"
+#include "app_model.hpp"
 #include <GLFW/glfw3.h>
 #include <array>
 #include <cstddef>
@@ -7,27 +8,63 @@
 #include <memory>
 #include <stdexcept>
 #include <system_error>
+#include <vector>
 #include <vulkan/vulkan_core.h>
 
 namespace firstGame {
 
     app::app() {
+        loadModels();
         createPipelineLayout();
         createPipeline();
         createCommandBuffer();
     }
 
     app::~app() {
-        vkDestroyPipelineLayout(device.device(), layout, nullptr);
+        vkDestroyPipelineLayout(gameDevice.device(), layout, nullptr);
     }
 
+    void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
+        app* ap = (app*) glfwGetWindowUserPointer(window);
+        ap->handleKeyPress(key, scancode, action, mods);
+    }
+
+
     void app::run() {
+        glfwSetWindowUserPointer(win.getWindow(), this);
+        glfwSetKeyCallback(win.getWindow(), key_callback);
+
         while (!win.shouldClose()) {
             glfwPollEvents();
             drawFrame();
         }
 
-        vkDeviceWaitIdle(device.device());
+        vkDeviceWaitIdle(gameDevice.device());
+    }
+
+    void app::loadModels() {
+        vertices =  {
+            {{0.0f, -.5f}},
+            {{0.5f, .5f}},
+            {{-0.5f, .5f}}
+        };
+
+        gameModel = std::make_unique<appModel>(gameDevice, vertices);
+    }
+
+    void app::handleKeyPress(int key, int scancode, int action, int mods) {
+        if (key == GLFW_KEY_W && action == GLFW_PRESS) {
+            vertices[0].pos.y -= .05f;
+        } else if (key == GLFW_KEY_S && action == GLFW_PRESS) {
+            vertices[0].pos.y += .05f;
+        } else if (key == GLFW_KEY_D && action == GLFW_PRESS) {
+            vertices[0].pos.x += .05f;
+        } else if (key == GLFW_KEY_A && action == GLFW_PRESS) {
+            vertices[0].pos.x -= .05f;
+        }
+
+
+        gameModel->updateVertices(vertices);
     }
 
     void app::createPipelineLayout() {
@@ -39,7 +76,7 @@ namespace firstGame {
         pipelineLayoutInfo.pushConstantRangeCount = 0;
         pipelineLayoutInfo.pPushConstantRanges = nullptr;
 
-        if (vkCreatePipelineLayout(device.device(), &pipelineLayoutInfo, nullptr, &layout) != VK_SUCCESS) {
+        if (vkCreatePipelineLayout(gameDevice.device(), &pipelineLayoutInfo, nullptr, &layout) != VK_SUCCESS) {
             throw std::runtime_error("failed to create Pipeline Layout");
         }
     }
@@ -51,7 +88,7 @@ namespace firstGame {
         pipelineConfig.pipelineLayout = layout;
 
         pipeline = std::make_unique<appPipeline>(
-            device,
+            gameDevice,
             pipelineConfig,
             "shaders/simple_shader.vert.spv",
             "shaders/simple_shader.frag.spv"
@@ -64,10 +101,10 @@ namespace firstGame {
         VkCommandBufferAllocateInfo allocInfo{};
         allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
         allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-        allocInfo.commandPool = device.getCommandPool();
+        allocInfo.commandPool = gameDevice.getCommandPool();
         allocInfo.commandBufferCount = commandBuffers.size();
 
-        if (vkAllocateCommandBuffers(device.device(), &allocInfo, commandBuffers.data()) != VK_SUCCESS) {
+        if (vkAllocateCommandBuffers(gameDevice.device(), &allocInfo, commandBuffers.data()) != VK_SUCCESS) {
             throw "failed to create command buffers";
         }
 
@@ -98,6 +135,9 @@ namespace firstGame {
             vkCmdBeginRenderPass(commandBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
             pipeline->bind(commandBuffers[i]);
+
+            gameModel->bind(commandBuffers[i]);
+            gameModel->draw(commandBuffers[i]);
 
             vkCmdDraw(commandBuffers[i], 6, 1, 0, 0);
 
