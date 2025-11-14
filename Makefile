@@ -1,23 +1,79 @@
+# tool macros
 CC = g++
-#CFLAGS = -std=c++17 -O2 
+DBGFLAGS = -g
 
-#LDFLAGS = -lglfw -lvulkan -ldl -lpthread -lwayland-client++ -lwayland-cursor -lxkbcommon 
+COBJFLAGS = -std=c++17 -O2  -c $(shell pkg-config --cflags glfw3 wayland-client xkbcommon)
 
-CFLAGS = -std=c++17 -O2 $(shell pkg-config --cflags glfw3 wayland-client xkbcommon)
-LDFLAGS = $(shell pkg-config --libs glfw3 wayland-client xkbcommon) -lvulkan -ldl -lpthread
+CFLAGS = $(shell pkg-config --libs glfw3 wayland-client xkbcommon) -lvulkan -ldl -lpthread
 
+# path macros
+BIN_PATH := bin
+OBJ_PATH := obj
+SRC_PATH := src
+DBG_PATH := debug
 
-export LIBDECOR_PLUGIN=none
-export LIBDECOR_DISABLE=1
-export GLFW_WAYLAND_NO_LIBDECOR=1
+# compile macros
+TARGET_NAME := main
+ifeq ($(OS),Windows_NT)
+	TARGET_NAME := $(addsuffix .exe,$(TARGET_NAME))
+endif
+TARGET := $(BIN_PATH)/$(TARGET_NAME)
+TARGET_DEBUG := $(DBG_PATH)/$(TARGET_NAME)
+
+# src files & obj files
+SRC := $(foreach x, $(SRC_PATH), $(wildcard $(addprefix $(x)/*,.cpp*)))
+OBJ := $(addprefix $(OBJ_PATH)/, $(addsuffix .o, $(notdir $(basename $(SRC)))))
+OBJ_DEBUG := $(addprefix $(DBG_PATH)/, $(addsuffix .o, $(notdir $(basename $(SRC)))))
+
+# clean files list
+DISTCLEAN_LIST := $(OBJ) \
+                  $(OBJ_DEBUG)
+CLEAN_LIST := $(TARGET) \
+			  $(TARGET_DEBUG) \
+			  $(DISTCLEAN_LIST)
+
+# default rule
+default: makedir all
+
+# non-phony targets
+$(TARGET): $(OBJ)
+	$(CC) -o $@ $(OBJ) $(CFLAGS)
+
+$(OBJ_PATH)/%.o: $(SRC_PATH)/%.c*
+	$(CC) $(COBJFLAGS) -o $@ $<
+
+$(DBG_PATH)/%.o: $(SRC_PATH)/%.c*
+	$(CC) $(COBJFLAGS) $(DBGFLAGS) -o $@ $<
+
+$(TARGET_DEBUG): $(OBJ_DEBUG)
+	$(CC) $(CFLAGS) $(DBGFLAGS) $(OBJ_DEBUG) -o $@
+
+# phony rules
+.PHONY: makedir
+makedir:
+	@mkdir -p $(BIN_PATH) $(OBJ_PATH) $(DBG_PATH)
+
+.PHONY: all
+all: $(TARGET)
+
+.PHONY: debug
+debug: $(TARGET_DEBUG)
+
+.PHONY: clean
+clean:
+	@echo CLEAN $(CLEAN_LIST)
+	@rm -f $(CLEAN_LIST)
+
+.PHONY: distclean
+distclean:
+	@echo CLEAN $(DISTCLEAN_LIST)
+	@rm -f $(DISTCLEAN_LIST)
 
 .PHONY: shaders
 shaders:
 	glslc shaders/simple_shader.frag -o shaders/simple_shader.frag.spv
 	glslc shaders/simple_shader.vert -o shaders/simple_shader.vert.spv
 
-all: 
-	$(CC) $(CFLAGS) src/*.cpp -o main $(LDFLAGS)
-
-run: shaders all
-	./main
+.PHONY: run
+run: all shaders
+	./bin/main
