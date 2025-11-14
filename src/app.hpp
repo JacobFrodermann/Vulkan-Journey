@@ -31,6 +31,8 @@ namespace firstGame {
             void createPipeline();
             void createCommandBuffer();
             void drawFrame();
+            void genMoreTriangles();
+            void reduceTriangles();
 
 
             appWin win{WIDTH, HEIGHT,  "Hello vk"};
@@ -43,5 +45,8 @@ namespace firstGame {
             std::unique_ptr<appModel> gameModel;    
         
             std::vector<appModel::Vertex> vertices;
+            appModel::Vertex halfDistance(appModel::Vertex a, appModel::Vertex b);
+
+            int level;
     };
 };

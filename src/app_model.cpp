@@ -37,12 +37,19 @@ namespace firstGame {
     }
 
     void appModel::updateVertices(const std::vector<Vertex>& vertices) {
-        vertexCount = static_cast<uint32_t>(vertices.size());
-        assert(vertexCount >= 3 && "vertex count must be >= 3");
+        std::vector<Vertex>  clear(729*9);
+        
+        vertexCount = static_cast<uint32_t>(clear.size());
         VkDeviceSize bufferSize = sizeof(vertices[0]) * vertexCount;
-
+        
         void *data;
         vkMapMemory(appDevice.device(), vertexBufferMemory, 0, bufferSize, 0, &data);
+        memcpy(data, vertices.data(), static_cast<size_t>(bufferSize));
+        
+        vertexCount = static_cast<uint32_t>(vertices.size());
+        assert(vertexCount >= 3 && "vertex count must be >= 3");
+        bufferSize = sizeof(vertices[0]) * vertexCount;
+
         memcpy(data, vertices.data(), static_cast<size_t>(bufferSize));
         vkUnmapMemory(appDevice.device(), vertexBufferMemory);
     }

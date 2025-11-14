@@ -5,15 +5,19 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <iostream>
 #include <memory>
+#include <ostream>
 #include <stdexcept>
 #include <system_error>
+#include <type_traits>
 #include <vector>
 #include <vulkan/vulkan_core.h>
 
 namespace firstGame {
 
     app::app() {
+        level = 0;
         loadModels();
         createPipelineLayout();
         createPipeline();
@@ -44,27 +48,68 @@ namespace firstGame {
 
     void app::loadModels() {
         vertices =  {
-            {{0.0f, -.5f}},
+            {{0.f, -.5f}},
             {{0.5f, .5f}},
             {{-0.5f, .5f}}
         };
+
+        for (int i = 0; i < 729*9; i++) {
+            vertices.push_back({});
+        }
 
         gameModel = std::make_unique<appModel>(gameDevice, vertices);
     }
 
     void app::handleKeyPress(int key, int scancode, int action, int mods) {
         if (key == GLFW_KEY_W && action == GLFW_PRESS) {
-            vertices[0].pos.y -= .05f;
+            genMoreTriangles();
+            gameModel->updateVertices(vertices);
         } else if (key == GLFW_KEY_S && action == GLFW_PRESS) {
-            vertices[0].pos.y += .05f;
-        } else if (key == GLFW_KEY_D && action == GLFW_PRESS) {
-            vertices[0].pos.x += .05f;
-        } else if (key == GLFW_KEY_A && action == GLFW_PRESS) {
-            vertices[0].pos.x -= .05f;
+            reduceTriangles();
+            gameModel->updateVertices(vertices);
         }
 
+    }
 
-        gameModel->updateVertices(vertices);
+    void app::genMoreTriangles() {
+        std::vector<appModel::Vertex> newVertices = {}; 
+
+        for (int i = 0; i < vertices.size() && i < 729; i +=3) {
+            if (vertices[i].pos.x == 0 && vertices[i].pos.y == 0) continue;
+            
+            newVertices.push_back(vertices[i]);
+            newVertices.push_back(halfDistance(vertices[i], vertices[i+1]));
+            newVertices.push_back(halfDistance(vertices[i], vertices[i+2]));
+            
+            newVertices.push_back(vertices[i+1]);
+            newVertices.push_back(halfDistance(vertices[i+1], vertices[i]));
+            newVertices.push_back(halfDistance(vertices[i+1], vertices[i+2]));
+            
+            newVertices.push_back(vertices[i+2]);
+            newVertices.push_back(halfDistance(vertices[i+2], vertices[i]));
+            newVertices.push_back(halfDistance(vertices[i+2], vertices[i+1]));
+        }
+        vertices = newVertices;
+        std::cout << newVertices.size() << std::endl;
+    }
+
+    void app::reduceTriangles() {
+        std::vector<appModel::Vertex> newVertices = {};
+        if (vertices.size() == 3) return;
+        
+        for (int i = 0; i < vertices.size(); i += 3) {
+            newVertices.push_back(vertices[i]);
+        }
+
+        vertices = newVertices;
+        std::cout << newVertices.size() << std::endl;
+    }
+
+    appModel::Vertex app::halfDistance(appModel::Vertex a, appModel::Vertex b) {
+        return appModel::Vertex{{
+            a.pos.x+(b.pos.x-a.pos.x)/2,
+            a.pos.y+(b.pos.y-a.pos.y)/2
+        }};
     }
 
     void app::createPipelineLayout() {
